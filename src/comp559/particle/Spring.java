@@ -45,7 +45,14 @@ public class Spring {
      * Applies the spring force by adding a force to each particle
      */
     public void apply() {
-        // TODO: Objective 1, FINISH THIS CODE!
+    	double distance = p1.p.distance(p2.p);
+    	Vector2d fA = new Vector2d(p1.p.x-p2.p.x,p1.p.y-p2.p.y);
+    	fA.scale(-k*(distance-l0)/distance);
+    	Vector2d fB = new Vector2d(fA);
+    	fB.scale(-1);
+    	p1.addForce(fA);
+    	p2.addForce(fB);
+        // DONE: Objective 1, FINISH THIS CODE!
         
     }
    

@@ -306,7 +306,7 @@ public class ParticleSystem implements SceneGraphNode, Function, Filter {
         setPhaseSpace( p );
         for(Spring spring : springs)
         {
-        	spring.apply();
+          	spring.apply();
         }
         for(Particle particle : particles)
         {

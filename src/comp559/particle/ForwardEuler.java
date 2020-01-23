@@ -21,7 +21,12 @@ public class ForwardEuler implements Integrator {
      */
     @Override
     public void step(double[] p, int n, double t, double h, double[] pout, Function derivs) {
-        // TODO: Objective 3, implement the forward Euler method
+    	double[] dpdt = new double[n];
+        derivs.derivs(h, p, dpdt);
+        for(int i = 0 ; i<n; i++)
+        {
+        	pout[i] = p[i] + dpdt[i];
+        }
         
     }
 

@@ -46,8 +46,9 @@ public class Spring {
      */
     public void apply() {
     	double distance = p1.p.distance(p2.p);
-    	Vector2d fA = new Vector2d(p1.p.x-p2.p.x,p1.p.y-p2.p.y);
-    	fA.scale(-k*(distance-l0)/distance);
+    	
+    	double mult = ((-k)*(distance-l0))/distance;
+    	Vector2d fA = new Vector2d(mult*(p1.p.x-p2.p.x),mult*(p1.p.y-p2.p.y));
     	Vector2d fB = new Vector2d(fA);
     	fB.scale(-1);
     	p1.addForce(fA);

@@ -303,7 +303,7 @@ public class ParticleSystem implements SceneGraphNode, Function, Filter {
     public void derivs(double t, double[] p, double[] dpdt) {
         // set particle positions to given values
     	int count = 0;
-        setPhaseSpace( p );
+    	setPhaseSpace( p );
         for(Spring spring : springs)
         {
           	spring.apply();
@@ -311,16 +311,14 @@ public class ParticleSystem implements SceneGraphNode, Function, Filter {
         for(Particle particle : particles)
         {
         	double fgy = particle.mass*gravity.getValue();
-        	double vdfx = particle.v.x*viscousDamping.getValue();
-        	double vdfy = particle.v.y*viscousDamping.getValue();
-        	double fkx = particle.p.x*springDamping.getValue();
-        	double fky = particle.p.y*springDamping.getValue();
-        	double ax = (vdfx+fkx+particle.f.x)/particle.mass;
-        	double ay = (vdfy+fky+fgy+particle.f.y)/particle.mass;
-        	dpdt[count++] = t*particle.v.x;
-        	dpdt[count++] = t*particle.v.y;
-        	dpdt[count++] = t*ax;
-        	dpdt[count++] = t*ay;
+        	double vdfx = -(particle.v.x*viscousDamping.getValue());
+        	double vdfy = -(particle.v.y*viscousDamping.getValue());
+        	double ax = (vdfx+particle.f.x)/particle.mass;
+        	double ay = (vdfy+fgy+particle.f.y)/particle.mass;
+    		dpdt[count++] = particle.v.x;
+        	dpdt[count++] = particle.v.y;
+        	dpdt[count++] = ax;
+        	dpdt[count++] = ay;   	
         } 
         // TODO: Objective 2, for explicit integrators, compute forces, and accelerations, and set dpdt
         

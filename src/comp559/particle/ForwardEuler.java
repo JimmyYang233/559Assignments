@@ -22,10 +22,10 @@ public class ForwardEuler implements Integrator {
     @Override
     public void step(double[] p, int n, double t, double h, double[] pout, Function derivs) {
     	double[] dpdt = new double[n];
-        derivs.derivs(h, p, dpdt);
+        derivs.derivs(t, p, dpdt);
         for(int i = 0 ; i<n; i++)
         {
-        	pout[i] = p[i] + dpdt[i];
+        	pout[i] = p[i] + h*dpdt[i];
         }
         
     }

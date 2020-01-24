@@ -19,7 +19,17 @@ public class Midpoint implements Integrator {
     	if ( tmp == null || tmp.length != n ) {
             tmp = new double[n];
     	}
-    	
+    	derivs.derivs(t, p, tmp);
+    	for(int i = 0; i<n; i++)
+    	{
+    		tmp[i] = p[i]+h*tmp[i]/2;
+    	}
+    	double[] dpdt = new double[n];
+    	derivs.derivs(t, tmp, dpdt);
+    	for(int i = 0; i<n; i++)
+    	{
+    		pout[i] = p[i]+h*dpdt[i];
+    	}
     }
 
 }

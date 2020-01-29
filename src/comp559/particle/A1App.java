@@ -23,6 +23,20 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.vecmath.Vector2d;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
 
 import mintools.parameters.BooleanParameter;
 import mintools.parameters.DoubleParameter;
@@ -303,8 +317,73 @@ public class A1App implements SceneGraphNode, Interactor {
             public void actionPerformed(ActionEvent e) {
             	// note, xml show here as the extension, but you might change this
             	// to something else if you choose a binary or text format.
-            	File f = FileSelect.select(".xml", "particle system", "save", ".", true );
+            	File f = FileSelect.select("xml", "particle system", "save", ".", true );
             	if ( f != null ) {
+            		try {
+            			DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
+            			DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
+            			Document document = documentBuilder.newDocument();
+            			Element root = document.createElement("root");
+            			document.appendChild(root);
+            			
+            			Element particlesRoot = document.createElement("particles");
+            			root.appendChild(particlesRoot);
+            			for(Particle p : system.getParticles())
+            			{
+            				Element particle = document.createElement("particle");
+            				particlesRoot.appendChild(particle);
+            				/**
+            				Attr attr = document.createAttribute("index");
+            				attr.setValue("" + p.index);
+            				particle.setAttributeNode(attr);
+            				Attr pinned  = document.createAttribute("pinned");
+            				pinned.setValue("" + p.pinned);
+            				particle.setAttributeNode(pinned);
+            				Attr color = document.createAttribute("color");
+            				color.setValue(p.color.x + " " + p.color.y + " " + p.color.z);
+            				particle.setAttributeNode(color);
+            				Attr mass = document.createAttribute("mass");
+            				mass.setValue("" + p.mass);
+            				particle.setAttributeNode(mass);
+            				**/
+            				Attr p0 = document.createAttribute("p0");
+            				p0.setValue(p.p0.x+ " " + p.p0.y);
+            				particle.setAttributeNode(p0);
+            				Attr v0 = document.createAttribute("v0");
+            				v0.setValue(p.v0.x+ " " + p.v0.y);
+            				particle.setAttributeNode(v0);
+            				/**
+            				Attr size = document.createAttribute("size");
+            				size.setValue("" + p.size);
+            				particle.setAttributeNode(size);
+            				**/
+            			}
+            			
+            			Element springRoot = document.createElement("springs");
+            			root.appendChild(springRoot);
+            			for(Spring s : system.getSprings())
+            			{
+            				Element spring = document.createElement("spring");
+            				springRoot.appendChild(spring);
+            				Attr particleIndexs = document.createAttribute("particleIndex");
+            				particleIndexs.setValue(s.p1.index + " " + s.p2.index);
+            				spring.setAttributeNode(particleIndexs);
+            			}
+            			
+            			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            			Transformer transformer = transformerFactory.newTransformer();
+            			DOMSource domSource = new DOMSource(document);
+            			StreamResult streamResult = new StreamResult(f);
+            			
+            			transformer.transform(domSource, streamResult);
+            		// TODO: Bonus, do something with this file!
+					} catch (ParserConfigurationException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (TransformerException tfe) {
+						// TODO Auto-generated catch block
+						tfe.printStackTrace();
+					}
             		// TODO: Bonus, do something with this file!
             	}
             }
@@ -319,9 +398,80 @@ public class A1App implements SceneGraphNode, Interactor {
             	// note, xml show here as the extension, but you might change this
             	// to something else if you choose a binary or text format.
 
-            	File f = FileSelect.select(".xml", "particle system", "load", ".", true );
+            	File f = FileSelect.select("xml", "particle system", "load", ".", true );
             	if ( f != null ) {
-            		// TODO: Bonus, do something with this file!
+            		try
+            		{
+            			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            			Document doc = dBuilder.parse(f);
+            			Element root = doc.getDocumentElement();
+            			Element particles = (Element)root.getFirstChild();
+            			NodeList particleList = particles.getChildNodes();
+            			system.clearParticles();
+            			List<Particle> tmp = system.getParticles();
+            			for(int i = 0 ; i<particleList.getLength(); i++)
+            			{
+            				Element particle = (Element) particleList.item(i);
+            				NamedNodeMap particleValues = particle.getAttributes();
+        					double px = 0;
+        					double py = 0;
+        					double vx = 0;
+        					double vy = 0;
+            				for(int j = 0 ; j<particleValues.getLength();j++)
+            				{
+            					Attr attr = (Attr)particleValues.item(j);
+        						String value = attr.getNodeValue();
+        						String[] pValue = value.split(" ");
+            					if(attr.getNodeName().equals("p0"))
+            					{
+            						px = Double.parseDouble(pValue[0]);
+            						py = Double.parseDouble(pValue[1]);
+            					}
+            					else if(attr.getNodeName().equals("v0"))
+            					{
+            						vx = Double.parseDouble(pValue[0]);
+            						vy = Double.parseDouble(pValue[1]);
+            					}
+            					else
+            					{
+            						System.out.println("Something is wrong");
+            					}
+            				}
+            				system.createParticle(px, py, vx, vy);
+            			}
+            			Element springs = (Element)root.getLastChild();
+            			NodeList springList = springs.getChildNodes();
+            			for(int i = 0 ; i<springList.getLength(); i++)
+            			{
+            				Element spring = (Element)springList.item(i);
+            				NamedNodeMap springValues = spring.getAttributes();
+    						int index1 = -1;
+    						int index2 = -1;
+            				for(int j = 0 ; j<springValues.getLength();j++)
+            				{
+            					Attr attr = (Attr)springValues.item(j);
+        						String value = attr.getNodeValue();
+        						String[] sValue = value.split(" ");
+            					if(attr.getNodeName().equals("particleIndex"))
+            					{
+            						index1 = Integer.parseInt(sValue[0]);
+            						index2 = Integer.parseInt(sValue[1]);
+            					}
+            					else
+            					{
+            						System.out.println("Something is wrong");
+            					}
+            				}
+            				List<Particle> ps = system.getParticles();
+        					system.createSpring(ps.get(index1), ps.get(index2));	
+            			}
+            		}
+            		catch(Exception e1)
+            		{
+            			e1.printStackTrace();
+            		}
+            		
             	}
             }
         });

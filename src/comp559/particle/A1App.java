@@ -82,7 +82,8 @@ public class A1App implements SceneGraphNode, Interactor {
     public A1App() {
         system = new ParticleSystem();
         system.integrator = forwardEuler;
-        ev = new EasyViewer( "COMP 559 W2011 - A1 Particle System", this, new Dimension(640,360), new Dimension(640,640) );
+        ev = new EasyViewer( "COMP 559 W2011 - A1 Particle System", this, new Dimension(1280,720), new Dimension(640,640) );
+        load(new File("forvideo.xml"));
         ev.addInteractor(this);
     }
      
@@ -325,6 +326,15 @@ public class A1App implements SceneGraphNode, Interactor {
             			Document document = documentBuilder.newDocument();
             			Element root = document.createElement("root");
             			document.appendChild(root);
+            			Element systemSetups = document.createElement("systemSetups");
+            			root.appendChild(systemSetups);
+            			systemSetups.setAttribute("stepsize", "" + stepsize.getValue());
+            			systemSetups.setAttribute("substeps", "" + substeps.getValue());
+            			systemSetups.setAttribute("usegravity", "" + system.useGravity.getValue());
+            			systemSetups.setAttribute("gravity", "" + system.gravity.getValue());
+            			systemSetups.setAttribute("springstiffness", "" + system.springStiffness.getValue());
+            			systemSetups.setAttribute("springdamping", "" + system.springDamping.getValue());
+            			systemSetups.setAttribute("viscousdamping", "" + system.viscousDamping.getValue());
             			
             			Element particlesRoot = document.createElement("particles");
             			root.appendChild(particlesRoot);
@@ -400,78 +410,7 @@ public class A1App implements SceneGraphNode, Interactor {
 
             	File f = FileSelect.select("xml", "particle system", "load", ".", true );
             	if ( f != null ) {
-            		try
-            		{
-            			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            			Document doc = dBuilder.parse(f);
-            			Element root = doc.getDocumentElement();
-            			Element particles = (Element)root.getFirstChild();
-            			NodeList particleList = particles.getChildNodes();
-            			system.clearParticles();
-            			List<Particle> tmp = system.getParticles();
-            			for(int i = 0 ; i<particleList.getLength(); i++)
-            			{
-            				Element particle = (Element) particleList.item(i);
-            				NamedNodeMap particleValues = particle.getAttributes();
-        					double px = 0;
-        					double py = 0;
-        					double vx = 0;
-        					double vy = 0;
-            				for(int j = 0 ; j<particleValues.getLength();j++)
-            				{
-            					Attr attr = (Attr)particleValues.item(j);
-        						String value = attr.getNodeValue();
-        						String[] pValue = value.split(" ");
-            					if(attr.getNodeName().equals("p0"))
-            					{
-            						px = Double.parseDouble(pValue[0]);
-            						py = Double.parseDouble(pValue[1]);
-            					}
-            					else if(attr.getNodeName().equals("v0"))
-            					{
-            						vx = Double.parseDouble(pValue[0]);
-            						vy = Double.parseDouble(pValue[1]);
-            					}
-            					else
-            					{
-            						System.out.println("Something is wrong");
-            					}
-            				}
-            				system.createParticle(px, py, vx, vy);
-            			}
-            			Element springs = (Element)root.getLastChild();
-            			NodeList springList = springs.getChildNodes();
-            			for(int i = 0 ; i<springList.getLength(); i++)
-            			{
-            				Element spring = (Element)springList.item(i);
-            				NamedNodeMap springValues = spring.getAttributes();
-    						int index1 = -1;
-    						int index2 = -1;
-            				for(int j = 0 ; j<springValues.getLength();j++)
-            				{
-            					Attr attr = (Attr)springValues.item(j);
-        						String value = attr.getNodeValue();
-        						String[] sValue = value.split(" ");
-            					if(attr.getNodeName().equals("particleIndex"))
-            					{
-            						index1 = Integer.parseInt(sValue[0]);
-            						index2 = Integer.parseInt(sValue[1]);
-            					}
-            					else
-            					{
-            						System.out.println("Something is wrong");
-            					}
-            				}
-            				List<Particle> ps = system.getParticles();
-        					system.createSpring(ps.get(index1), ps.get(index2));	
-            			}
-            		}
-            		catch(Exception e1)
-            		{
-            			e1.printStackTrace();
-            		}
-            		
+            		load(f);
             	}
             }
         });
@@ -488,6 +427,90 @@ public class A1App implements SceneGraphNode, Interactor {
        
         
         return vfp.getPanel();
+    }
+    
+    public void load(File f)
+    {
+    	try
+		{
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(f);
+			Element root = doc.getDocumentElement();
+			NodeList elements = root.getChildNodes();
+			Element systemSetups = (Element)elements.item(0);
+			stepsize.setValue(Double.parseDouble(systemSetups.getAttribute("stepsize")));
+			substeps.setValue(Integer.parseInt(systemSetups.getAttribute("substeps")));
+			system.useGravity.setValue(Boolean.parseBoolean(systemSetups.getAttribute("usegravity")));
+			system.gravity.setValue(Double.parseDouble(systemSetups.getAttribute("gravity")));
+			system.springStiffness.setValue(Double.parseDouble(systemSetups.getAttribute("springstiffness")));
+			system.springDamping.setValue(Double.parseDouble(systemSetups.getAttribute("springdamping")));
+			system.viscousDamping.setValue(Double.parseDouble(systemSetups.getAttribute("viscousdamping")));
+			Element particles = (Element)elements.item(1);
+			NodeList particleList = particles.getChildNodes();
+			system.clearParticles();
+			List<Particle> tmp = system.getParticles();
+			for(int i = 0 ; i<particleList.getLength(); i++)
+			{
+				Element particle = (Element) particleList.item(i);
+				NamedNodeMap particleValues = particle.getAttributes();
+				double px = 0;
+				double py = 0;
+				double vx = 0;
+				double vy = 0;
+				for(int j = 0 ; j<particleValues.getLength();j++)
+				{
+					Attr attr = (Attr)particleValues.item(j);
+					String value = attr.getNodeValue();
+					String[] pValue = value.split(" ");
+					if(attr.getNodeName().equals("p0"))
+					{
+						px = Double.parseDouble(pValue[0]);
+						py = Double.parseDouble(pValue[1]);
+					}
+					else if(attr.getNodeName().equals("v0"))
+					{
+						vx = Double.parseDouble(pValue[0]);
+						vy = Double.parseDouble(pValue[1]);
+					}
+					else
+					{
+						System.out.println("Something is wrong");
+					}
+				}
+				system.createParticle(px, py, vx, vy);
+			}
+			Element springs = (Element)elements.item(2);
+			NodeList springList = springs.getChildNodes();
+			for(int i = 0 ; i<springList.getLength(); i++)
+			{
+				Element spring = (Element)springList.item(i);
+				NamedNodeMap springValues = spring.getAttributes();
+				int index1 = -1;
+				int index2 = -1;
+				for(int j = 0 ; j<springValues.getLength();j++)
+				{
+					Attr attr = (Attr)springValues.item(j);
+					String value = attr.getNodeValue();
+					String[] sValue = value.split(" ");
+					if(attr.getNodeName().equals("particleIndex"))
+					{
+						index1 = Integer.parseInt(sValue[0]);
+						index2 = Integer.parseInt(sValue[1]);
+					}
+					else
+					{
+						System.out.println("Something is wrong");
+					}
+				}
+				List<Particle> ps = system.getParticles();
+				system.createSpring(ps.get(index1), ps.get(index2));	
+			}
+		}
+		catch(Exception e1)
+		{
+			e1.printStackTrace();
+		}
     }
     
     private Particle p1 = null;

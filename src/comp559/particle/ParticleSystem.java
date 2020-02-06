@@ -399,7 +399,7 @@ public class ParticleSystem implements SceneGraphNode, Function, Filter {
 			getVelocities(xdot);
 			A = (DenseMatrix) (M.add(dfdx.scale(-h*h)).add(dfdv.scale(-h)));
 			b = (DenseVector) (f.scale(h).add(h*h, xdot));
-			CG.solve(A, b, deltaxdot, 10);
+			CG.solve(A, b, deltaxdot, 40);
 			setVelocities((DenseVector)xdot.add(deltaxdot));
 			for(Particle p : particles)
 			{

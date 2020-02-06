@@ -19,15 +19,10 @@ public class SymplecticEuler implements Integrator {
     	{
     		pout[count+2] = p[count+2]+h*dpdt[count+2];
     		pout[count+3] = p[count+3]+h*dpdt[count+3];
-    		pout[count] = p[count]+pout[count+2];
-    		pout[count+1] = p[count+1] + pout[count+3];
+    		pout[count] = p[count]+h*pout[count+2];
+    		pout[count+1] = p[count+1] + h*pout[count+3];
     		count= count+4;
     	}
-    	for(int i = 0; i<n; i++)
-    	{
-    		pout[i] = p[i]+h*dpdt[i];
-    	}
-
     }
 
 }

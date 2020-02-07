@@ -1,10 +1,13 @@
 package comp559.a2ccd;
 
 import java.awt.Font;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 import javax.vecmath.Point2d;
+import javax.vecmath.Vector2d;
 
 import mintools.parameters.BooleanParameter;
 import mintools.parameters.DoubleParameter;
@@ -86,14 +89,18 @@ public class RobustCCD {
 	    	{
 	    		for(Spring spring : system.springs)
 	    		{
-	    			double t = findT(h, spring.A, spring.B, particle);
-    				if(t>=0)
-    				{
+	    			List<Double> ts = findT(h, spring.A, spring.B, particle);
+	    			for(double t : ts)
+	    			{
     					double alpha = findAlpha(t, spring.A, spring.B, particle);
-    					System.out.println("alpha is " + alpha);
-    					process();
-    					foundCollision = true;
-    				}
+    					if(alpha>=0&&alpha<=1)
+    					{
+    						System.out.println("alpha is " + alpha);
+        					System.out.println("t is " + t);
+        					process(spring.A, spring.B, particle, alpha, t);
+        					foundCollision = true;
+    					}					
+	    			}
     			}
     		}
 	    	iter++;
@@ -106,10 +113,11 @@ public class RobustCCD {
         return true;
     }
     
-    public double findT(double h, Particle A, Particle B, Particle C)
+    public List<Double> findT(double h, Particle A, Particle B, Particle C)
     {
+    	List<Double> ts = new ArrayList<Double>();
 		if(A.equals(C)||B.equals(C)) {
-			return -1;
+			return ts;
 		}
 		else
 		{
@@ -131,13 +139,12 @@ public class RobustCCD {
 					ccx*ay-ccx*by-bby*cx-aay*bx-bbx*ay-ccy*ax-aax*cy;
 			double a = aax*bby+bbx*ccy+aay*ccx-ccx*bby-ccy*aax-aay*bbx;
 			double delta = b*b-4*a*c;
-			double t = -1;
 			if(a == 0)
 			{
 				double tmpt = -c/b;
 				if(tmpt>0&&tmpt<=h)
 				{
-					t = tmpt;
+					ts.add(tmpt);
 				}
 			}
 			else if(delta>0)
@@ -145,31 +152,16 @@ public class RobustCCD {
 
 				double t1 = (-b+Math.sqrt(delta))/(2*a);
 				double t2 = (-b-Math.sqrt(delta))/(2*a);
-				if(t1>0&&t1<=h&&t2>0&&t2<=h)
+				if(t1>0&&t1<=h)
 				{
-					if(t1>t2)
-					{
-						t = t2;
-					}
-					else 
-					{
-						t = t1;
-					}
+					ts.add(t1);
 				}
-				else if(t1>0&&t1<=h)
+				if(t2>0&&t2<=h)
 				{
-					t= t1;
-				}
-				else if(t2>0&&t2<=h)
-				{
-					t = t2;
-				}
-				else
-				{
-					//do nothing
+					ts.add(t2);
 				}
 			}
-	    	return t;
+	    	return ts;
 		}
 
     }
@@ -199,9 +191,32 @@ public class RobustCCD {
 		return alpha;
     }
     	
-    public void process()
+    public void process(Particle A, Particle B , Particle C, double alpha, double t)
     {
-    	//To-do
+    	Point2d pa = A.p;
+    	Point2d pb = B.p;
+    	Vector2d va = A.v;
+    	Vector2d vb = B.v;
+    	Vector2d vc = C.v;
+    	Vector2d n = new Vector2d(pb.y+vb.y*t-pa.y-va.y*t, pb.x+vb.x*t-pa.x-va.x*t);
+    	n.normalize();
+    	//System.out.println("n is " + n);
+    	Vector2d valpha = new Vector2d(alpha*va.x+(1-alpha)*vb.x, alpha*(va.y)+(1-alpha)*vb.y);
+    	Vector2d vminus = new Vector2d(n.x*(vc.x-valpha.x), n.y*(vc.y-valpha.y));
+    	System.out.println("vminus is " + vminus);
+    	double ma = A.mass;
+    	double mb = B.mass;
+    	double mc = C.mass;
+    	double e = restitutionValue.getValue();
+    	Vector2d j = new Vector2d(-(1+e)*vminus.x/(1/mc+alpha*alpha/ma+(1-alpha)*(1-alpha)/mb), 
+    			-(1+e)*vminus.y/(1/mc+alpha*alpha/ma+(1-alpha)*(1-alpha)/mb));
+    	System.out.println("j is " + j);
+    	A.v.add(new Vector2d(-alpha*j.x/ma, -alpha*j.y/ma));
+    	B.v.add(new Vector2d(-(1-alpha)*j.x/mb, -(1-alpha)*j.y/mb));
+    	//C.p.add(j);
+    	//System.out.println(C.v);
+    	C.v.add(new Vector2d(j.x/mc, j.y/mc));
+    	//System.out.println(C.v);
     }
     
 }

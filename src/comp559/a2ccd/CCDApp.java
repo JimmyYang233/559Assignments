@@ -106,7 +106,7 @@ public class CCDApp implements SceneGraphNode, Interactor {
             }
             if ( ! SanityCheck.sanityCheck(system) ) {
                 //run.setValue( false );
-                sanity = false;
+            	sanity = false;
             }            
         }
                     

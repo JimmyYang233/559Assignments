@@ -170,7 +170,17 @@ public class TestSystems {
 	    p2.pinned = true;
 	    springs.add( new Spring( p1, p2 ) );
 		Particle p3 = new Particle( 300, 50, 0, 0 );
+		Particle p4 = new Particle(400, 50,0,0);
+		Particle p5 = new Particle(200 , 50, 0,0);
 		particles.add(p3);
+		particles.add(p4);
+		particles.add(p5);
+		Particle p6 = new Particle(100 , 50, 0,0);
+		particles.add(p6);
+		Particle p7 = new Particle(150 , 50, 0,0);
+		particles.add(p7);
+		Particle p8 = new Particle(500 , 50, 0,0);
+		particles.add(p8);
     }
     
     private void createPendulumPair() {

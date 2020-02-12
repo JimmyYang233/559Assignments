@@ -119,7 +119,7 @@ public class ParticleSystem implements SceneGraphNode {
     	
         computeForces();
         stepVelocities( h );       
-        robustCCD.applyRepulsion( h, this );            
+        robustCCD.applyRepulsion( h, this );
         boolean resultOK = robustCCD.check( h, this );
         stepPositions( h );
                         

@@ -104,9 +104,12 @@ public class RobustCCD {
 			    	Point2d pb = spring.B.p;
     				Point2d pc = particle.p;
         			Point2d cp = findClosestPoint(pa, pb, pc);
+        			double length = new Vector2d(pb.x-pa.x, pb.y-pa.y).length();
+        			double lengthAdded = length+2*H;
+        			double parameter = (lengthAdded/length)/2;
     				double alpha = findAlphaWithClosestPoint(pa, pb, cp);
     				double distance = Math.sqrt(Math.pow(pc.x-cp.x,2) + Math.pow(pc.y-cp.y, 2));
-    				if(alpha>=0&&alpha<=1&&H>=distance)
+    				if(alpha>=0-parameter&&alpha<=1+parameter&&H>=distance)
     				{
     			    	Vector2d ac = new Vector2d(pc.x-pa.x, pc.y-pa.y);
     			    	double x = pb.y-pa.y;

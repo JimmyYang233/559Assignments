@@ -104,9 +104,12 @@ public class RobustCCD {
 			    	Point2d pb = spring.B.p;
     				Point2d pc = particle.p;
         			Point2d cp = findClosestPoint(pa, pb, pc);
+        			double length = new Vector2d(pb.x-pa.x, pb.y-pa.y).length();
+        			double lengthAdded = length+2*H;
+        			double parameter = (lengthAdded/length)/2;
     				double alpha = findAlphaWithClosestPoint(pa, pb, cp);
     				double distance = Math.sqrt(Math.pow(pc.x-cp.x,2) + Math.pow(pc.y-cp.y, 2));
-    				if(alpha>=0&&alpha<=1&&H>=distance)
+    				if(alpha>=0-parameter&&alpha<=1+parameter&&H>=distance)
     				{
     			    	Vector2d ac = new Vector2d(pc.x-pa.x, pc.y-pa.y);
     			    	double x = pb.y-pa.y;
@@ -152,7 +155,7 @@ public class RobustCCD {
     	do 
     	{
     		foundCollision = false;
-			iters++;
+
 	    	for(Particle particle : system.particles)
 	    	{
 	    		for(Spring spring : system.springs)
@@ -165,7 +168,7 @@ public class RobustCCD {
 	    					double alpha = findAlpha(t, spring.A, spring.B, particle);
 	    					if(alpha>=0&&alpha<=1)
 	    					{	
-	    						
+	    						iters++;
 	        					process(spring.A, spring.B, particle, alpha, t);
 	        					foundCollision = true;
 	        					break;
@@ -211,7 +214,7 @@ public class RobustCCD {
 					ccx*ay-ccx*by-bby*cx-aay*bx-bbx*ay-ccy*ax-aax*cy;
 			double a = aax*bby+bbx*ccy+aay*ccx-ccx*bby-ccy*aax-aay*bbx;
 			double delta = b*b-4*a*c;
-			if(a>-0.0000001&&a<=0.0000001)
+			if(a==0)
 			{
 				double tmpt = -c/b;
 				if(tmpt>0&&tmpt<=h)
@@ -273,9 +276,9 @@ public class RobustCCD {
     	Vector2d n = getNormal(A,B,C,t);
     	double vminus = getVreln(A,B,C,alpha,t);
     	//System.out.println("vminus is " + vminus);
-    	double ma = A.pinned?Double.MAX_VALUE:A.mass;
-    	double mb = B.pinned?Double.MAX_VALUE:B.mass;
-    	double mc = C.pinned?Double.MAX_VALUE:C.mass;
+    	double ma = A.pinned?1.0/0.0:A.mass;
+    	double mb = B.pinned?1.0/0.0:B.mass;
+    	double mc = C.pinned?1.0/0.0:C.mass;
     	double e = restitutionValue.getValue();
     	double j = -(1+e)*vminus/(1/mc+alpha*alpha/ma+(1-alpha)*(1-alpha)/mb);
     	applyImpulse(A,B,C,alpha,n, j);
@@ -314,9 +317,9 @@ public class RobustCCD {
     public void applyImpulse(Particle A, Particle B, Particle C, double alpha, Vector2d n, double j)
     {
     	//System.out.println("j is " + j);
-    	double ma = A.pinned?Double.MAX_VALUE:A.mass;
-    	double mb = B.pinned?Double.MAX_VALUE:B.mass;
-    	double mc = C.pinned?Double.MAX_VALUE:C.mass;
+    	double ma = A.pinned?1.0/0.0:A.mass;
+    	double mb = B.pinned?1.0/0.0:B.mass;
+    	double mc = C.pinned?1.0/0.0:C.mass;
 
 		//System.out.println("A before " + A.v);
     	A.v.add(new Vector2d(-alpha*j*n.x/ma, -alpha*j*n.y/ma));

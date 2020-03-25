@@ -142,7 +142,7 @@ public class CCDApp implements SceneGraphNode, Interactor {
         // about the system and the current stepping        
         if ( showInfo.getValue() ) {
         	// TODO: add your name to the display
-            String text = "YOUR NAME HERE\n" + system.toString();
+            String text = "Dan Ning Yang\n" + system.toString();
         	text += "\n" + "h = " + stepsize.getValue() + "\n" +
                       "substeps = " + (int)(double) substeps.getValue() ;
 	        gl.glColor3f(0.5f,0.5f,0.5f);

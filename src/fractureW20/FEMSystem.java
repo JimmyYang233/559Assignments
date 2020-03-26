@@ -241,6 +241,26 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         	p.computeSeparationTensor();
         }
         
+        double t = toughness.getValue();
+        Particle theP = null;
+        for(Particle p : particles )
+        {
+        	if(!p.pinned)
+        	{
+        		double bigev = Math.max(p.separationTensor.ev1, p.separationTensor.ev2);
+        		if(bigev>t)
+        		{
+        			t = bigev;
+        			theP = p;
+        		}
+        	}
+        }
+        
+        Particle newP = new Particle(theP);
+        particles.add(newP);
+        
+        identifyBoundaries();
+        
         // TODO: Objective 4: process fracture
         // Note that you can use identifyBoundaries() as a slow way to update the border edges
         // after modifying the topology.    

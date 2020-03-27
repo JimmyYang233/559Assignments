@@ -272,6 +272,18 @@ public class FEMTriangle {
 		C.df.x += (-H.a-H.b);
 		C.df.y += (-H.c-H.d);
 	}
+	/**
+	 * helper function to get the centroid of this triangle
+	 * @return the centroid as a point2d
+	 */
+	public Point2d getCentroid()
+	{
+		double px = (A.p.x+B.p.x+C.p.x)/3;
+		double py = (A.p.y+B.p.y+C.p.y)/3;
+		
+		return new Point2d(px,py);
+		
+	}
 	
 	/**
 	 * Draws the triangle with transparency alpha 

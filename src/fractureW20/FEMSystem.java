@@ -8,6 +8,7 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.border.TitledBorder;
+import javax.vecmath.Point2d;
 import javax.vecmath.Vector2d;
 
 import com.jogamp.opengl.GL;
@@ -243,24 +244,69 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         
         double t = toughness.getValue();
         Particle theP = null;
+        Vector2d theV = new Vector2d();
         for(Particle p : particles )
         {
         	if(!p.pinned)
         	{
         		double bigev = Math.max(p.separationTensor.ev1, p.separationTensor.ev2);
+        		Vector2d bigv = p.separationTensor.ev1>p.separationTensor.ev2?
+        				p.separationTensor.v1:p.separationTensor.v2;
         		if(bigev>t)
         		{
         			t = bigev;
         			theP = p;
+        			theV = bigv;
         		}
         	}
         }
         
-        Particle newP = new Particle(theP);
-        particles.add(newP);
-        
-        identifyBoundaries();
-        
+        if(theP!=null)
+        {
+        	Particle newP = new Particle(theP);
+            newP.index = particles.size();
+            particles.add(newP);
+            FEMTriangle triToRemove = null;
+            for(FEMTriangle tri : theP.tris)
+            {
+            	Point2d a= tri.getCentroid();
+            	Vector2d n = theV; 
+            	Point2d p = theP.p;
+            	Vector2d aminusp = new Vector2d(a.x-p.x, a.y-p.y);
+            	double result = n.dot(aminusp);
+            	if(result>0)
+            	{
+            		//do nothing keep triangle connect to it
+            	}
+            	else
+            	{
+            		if(tri.Ai == theP.index)
+            		{
+            			tri.A = newP;
+            			tri.Ai = newP.index;
+            		}
+            		else if(tri.Bi == theP.index)
+            		{
+            			tri.B = newP;
+            			tri.Bi = newP.index;
+            		}
+            		else if(tri.Ci == theP.index)
+            		{
+            			tri.C = newP;
+            			tri.Ci = newP.index;
+            		}
+            		else
+            		{
+            			System.out.println("Something is wrong, one of the particle in triangle must be equal");
+            		}
+            		triToRemove = tri;
+            	}
+            }
+            theP.tris.remove(triToRemove);
+            newP.addTriangle(triToRemove);
+            identifyBoundaries();
+        }
+              
         // TODO: Objective 4: process fracture
         // Note that you can use identifyBoundaries() as a slow way to update the border edges
         // after modifying the topology.    

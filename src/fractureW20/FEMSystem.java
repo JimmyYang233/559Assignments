@@ -291,31 +291,116 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
 		}
 	}
 	
-	public void restoreParticle(Particle theP, Particle newP)
+	public boolean hasEdge(Particle p1, Particle p2)
 	{
-		//has hinge joint, remove the added one
-        for(FEMTriangle tri : newP.tris)
+		for(Edge edge : collidableEdges)
+		{
+			if(edge.p1.equals(p1)&&edge.p2.equals(p2))
+			{
+				return true;
+			}
+			else if(edge.p1.equals(p2)&&edge.p2.equals(p1))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void splitParticle(Particle pInMiddle, Particle pStart)
+	{
+		ArrayList<FEMTriangle> triangles = new ArrayList<FEMTriangle>();
+		Particle pLast = pStart;
+		Particle pNext = pStart;
+		
+		do
+		{
+			for(FEMTriangle tri : pInMiddle.tris)
+			{
+				if(tri.A.equals(pInMiddle))
+				{
+					if(tri.B.equals(pNext)&&!tri.C.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.B;
+						triangles.add(tri);
+					}
+					else if(tri.C.equals(pNext)&&!tri.B.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.C;
+						triangles.add(tri);
+					}
+				}
+				else if(tri.B.equals(pInMiddle))
+				{
+					if(tri.A.equals(pNext)&&!tri.C.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.A;
+						triangles.add(tri);
+					}
+					else if(tri.C.equals(pNext)&&!tri.A.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.C;
+						triangles.add(tri);
+					}
+				}
+				else if(tri.C.equals(pInMiddle))
+				{
+					if(tri.B.equals(pNext)&&!tri.A.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.B;
+						triangles.add(tri);
+					}
+					else if(tri.A.equals(pNext)&&!tri.B.equals(pLast))
+					{
+						pLast = pNext;
+						pNext = tri.A;
+						triangles.add(tri);
+					}
+				}
+				else
+				{
+					System.out.println("Something wrong");
+				}
+			}
+		}while(!hasEdge(pInMiddle, pNext));
+		Particle newP = new Particle(pInMiddle);
+		particles.add(newP);
+		for(FEMTriangle tri : triangles)
         {
-			if(tri.A.equals(newP))
+    		if(tri.A.equals(pInMiddle))
     		{
-    			tri.A = theP;
-    			tri.Ai = theP.addTriangle(tri);
+    			tri.A = newP;
+    			tri.Ai = newP.addTriangle(tri);
     		}
-    		else if(tri.B.equals(newP))
+    		else if(tri.B.equals(pInMiddle))
     		{
-    			tri.B = theP;
-    			tri.Bi = theP.addTriangle(tri);
+    			tri.B = newP;
+    			tri.Bi = newP.addTriangle(tri);
     		}
-    		else if(tri.C.equals(newP))
+    		else if(tri.C.equals(pInMiddle))
     		{
-    			tri.C = theP;
-    			tri.Ci = theP.addTriangle(tri);
+    			tri.C = newP;
+    			tri.Ci = newP.addTriangle(tri);
     		}
     		else
     		{
     			System.out.println("Something is wrong, one of the particle in triangle must be equal");
     		}
-			particles.remove(newP);
+    		pInMiddle.tris.remove(tri);
+        }
+        if(newP.tris.isEmpty())
+        {
+        	particles.remove(newP);
+        }
+        
+        if(pInMiddle.tris.isEmpty())
+        {
+        	particles.remove(pInMiddle);
         }
 	}
 
@@ -417,10 +502,26 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
                 boolean particleRestored = false;
         		for(FEMTriangle theTri : newP.tris)
         		{
-        			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
+        			if(isHingeJoint(theTri.A))
         			{
         				notYetFinish = true;
-        				restoreParticle(theP, newP);
+        				splitParticle(theTri.A, newP);
+        				particleRestored = true;
+        				pThatConsidered.add(theP);
+        	            break;
+        			}
+        			else if(isHingeJoint(theTri.B))
+        			{
+        				notYetFinish = true;
+        				splitParticle(theTri.B, newP);
+        				particleRestored = true;
+        				pThatConsidered.add(theP);
+        	            break;
+        			}
+        			else if(isHingeJoint(theTri.C))
+        			{
+        				notYetFinish = true;
+        				splitParticle(theTri.C, newP);
         				particleRestored = true;
         				pThatConsidered.add(theP);
         	            break;
@@ -431,10 +532,26 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         		{
         			for(FEMTriangle theTri : theP.tris)
             		{
-            			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
+        				if(isHingeJoint(theTri.A))
             			{
             				notYetFinish = true;
-            				restoreParticle(theP, newP);
+            				splitParticle(theTri.A, theP);
+            				particleRestored = true;
+            				pThatConsidered.add(theP);
+            	            break;
+            			}
+            			else if(isHingeJoint(theTri.B))
+            			{
+            				notYetFinish = true;
+            				splitParticle(theTri.B, theP);
+            				particleRestored = true;
+            				pThatConsidered.add(theP);
+            	            break;
+            			}
+            			else if(isHingeJoint(theTri.C))
+            			{
+            				notYetFinish = true;
+            				splitParticle(theTri.C, theP);
             				particleRestored = true;
             				pThatConsidered.add(theP);
             	            break;

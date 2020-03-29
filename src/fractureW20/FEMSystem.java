@@ -1,6 +1,7 @@
 package fractureW20;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -228,6 +229,133 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         }
 	}
 
+	
+	boolean isHingeJoint(Particle p) 
+	{
+		int triangleSize = p.tris.size();
+		int particlesShareEdge = 0;
+		for(Edge e : collidableEdges)
+		{
+			if(e.p1==p||e.p2==p)
+			{
+				particlesShareEdge += 1;
+			}
+		}
+		if(triangleSize+1==particlesShareEdge)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	
+	void separateParticle(Particle pToCheck, Particle startP)
+	{
+		Particle lastP = startP;
+		Particle nextP = startP;
+		ArrayList<FEMTriangle> triangles = new ArrayList<FEMTriangle>();
+		do
+		{
+			for(FEMTriangle tri : pToCheck.tris)
+			{
+				if(tri.A.equals(nextP))
+				{
+					if(tri.B.equals(pToCheck)&&!tri.C.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.C;
+						triangles.add(tri);
+						break;
+					}
+					else if(tri.C.equals(pToCheck)&&!tri.B.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.B;
+						triangles.add(tri);
+						break;
+					}
+					else
+					{
+						lastP = nextP;
+					}
+				}				
+				else if(tri.B.equals(nextP))
+				{
+					if(tri.A.equals(pToCheck)&&!tri.C.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.C;
+						triangles.add(tri);
+						break;
+					}
+					else if(tri.C.equals(pToCheck)&&!tri.A.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.A;
+						triangles.add(tri);
+						break;
+					}
+					else
+					{
+						lastP = nextP;
+					}
+				}				
+				else if(tri.C.equals(nextP))
+				{
+					if(tri.B.equals(pToCheck)&&!tri.A.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.A;
+						triangles.add(tri);
+						break;
+					}
+					else if(tri.A.equals(pToCheck)&&!tri.B.equals(lastP))
+					{
+						lastP = nextP;
+						nextP = tri.B;
+						triangles.add(tri);
+						break;
+					}
+					else
+					{
+						lastP = nextP;
+					}
+				}
+				else
+				{
+					System.out.println("Something is wrong");
+				}
+			}
+		}while(lastP!=nextP);
+		Particle newP = new Particle(pToCheck);
+		for(FEMTriangle tri : triangles)
+		{
+			if(tri.A.equals(pToCheck))
+    		{
+    			tri.A = newP;
+    			tri.Ai = newP.addTriangle(tri);
+    			pToCheck.tris.remove(tri);
+    		}
+    		else if(tri.B.equals(pToCheck))
+    		{
+    			tri.B = newP;
+    			tri.Bi = newP.addTriangle(tri);
+    			pToCheck.tris.remove(tri);
+    		}
+    		else if(tri.C.equals(pToCheck))
+    		{
+    			tri.C = newP;
+    			tri.Ci = newP.addTriangle(tri);
+    			pToCheck.tris.remove(tri);
+    		}
+    		else
+    		{
+    			System.out.println("Something is wrong, one of the particle in triangle must be equal");
+    		}
+		}
+	}
 
     
     /**
@@ -260,13 +388,13 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         		}
         	}
         }
-        
+
         if(theP!=null)
         {
         	Particle newP = new Particle(theP);
             newP.index = particles.size();
             particles.add(newP);
-            FEMTriangle triToRemove = null;
+            ArrayList<FEMTriangle> trisToRemove = new ArrayList<FEMTriangle>();
             for(FEMTriangle tri : theP.tris)
             {
             	Point2d a= tri.getCentroid();
@@ -280,31 +408,65 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
             	}
             	else
             	{
-            		if(tri.Ai == theP.index)
+            		if(tri.A.equals(theP))
             		{
             			tri.A = newP;
-            			tri.Ai = newP.index;
+            			tri.Ai = newP.addTriangle(tri);
             		}
-            		else if(tri.Bi == theP.index)
+            		else if(tri.B.equals(theP))
             		{
             			tri.B = newP;
-            			tri.Bi = newP.index;
+            			tri.Bi = newP.addTriangle(tri);
             		}
-            		else if(tri.Ci == theP.index)
+            		else if(tri.C.equals(theP))
             		{
             			tri.C = newP;
-            			tri.Ci = newP.index;
+            			tri.Ci = newP.addTriangle(tri);
             		}
             		else
             		{
             			System.out.println("Something is wrong, one of the particle in triangle must be equal");
             		}
-            		triToRemove = tri;
+            		
+
+            		trisToRemove.add(tri);
             	}
             }
-            theP.tris.remove(triToRemove);
-            newP.addTriangle(triToRemove);
-            identifyBoundaries();
+            for(FEMTriangle triToRemove : trisToRemove)
+            {
+            	theP.tris.remove(triToRemove);
+            }              
+    		for(FEMTriangle theTri : newP.tris)
+    		{
+    			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
+    			{
+    				//has hinge joint, remove the added one
+    	            for(FEMTriangle tri : theP.tris)
+    	            {
+	    				if(tri.A.equals(newP))
+	            		{
+	            			tri.A = theP;
+	            			tri.Ai = theP.addTriangle(tri);
+	            		}
+	            		else if(tri.B.equals(newP))
+	            		{
+	            			tri.B = theP;
+	            			tri.Bi = theP.addTriangle(tri);
+	            		}
+	            		else if(tri.C.equals(newP))
+	            		{
+	            			tri.C = theP;
+	            			tri.Ci = theP.addTriangle(tri);
+	            		}
+	            		else
+	            		{
+	            			System.out.println("Something is wrong, one of the particle in triangle must be equal");
+	            		}
+	    				particles.remove(newP);
+    	            }         		
+    			}
+                identifyBoundaries();
+    		}
         }
               
         // TODO: Objective 4: process fracture

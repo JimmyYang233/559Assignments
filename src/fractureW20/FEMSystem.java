@@ -233,128 +233,90 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
 	boolean isHingeJoint(Particle p) 
 	{
 		int triangleSize = p.tris.size();
-		int particlesShareEdge = 0;
-		for(Edge e : collidableEdges)
+		ArrayList<Particle> connectedP = new ArrayList<Particle>();
+		Particle pp = null;
+		for(FEMTriangle tri : p.tris)
 		{
-			if(e.p1==p||e.p2==p)
+			pp = tri.A;
+			if(pp.equals(p))
 			{
-				particlesShareEdge += 1;
+				Particle pp2 = tri.B;
+				if(!connectedP.contains(pp2))
+				{
+					connectedP.add(pp2);
+				}
+				Particle pp3 = tri.C;
+				if(!connectedP.contains(pp3))
+				{
+					connectedP.add(pp3);
+				}
+			}
+			pp = tri.B;
+			if(pp.equals(p))
+			{
+				Particle pp2 = tri.A;
+				if(!connectedP.contains(pp2))
+				{
+					connectedP.add(pp2);
+				}
+				Particle pp3 = tri.C;
+				if(!connectedP.contains(pp3))
+				{
+					connectedP.add(pp3);
+				}
+			}
+			pp = tri.C;
+			if(pp.equals(p))
+			{
+				Particle pp2 = tri.B;
+				if(!connectedP.contains(pp2))
+				{
+					connectedP.add(pp2);
+				}
+				Particle pp3 = tri.A;
+				if(!connectedP.contains(pp3))
+				{
+					connectedP.add(pp3);
+				}
 			}
 		}
-		if(triangleSize+1==particlesShareEdge)
-		{
-			return false;
-		}
-		else
+		int particlesShareEdge = connectedP.size();
+		if(triangleSize+1<particlesShareEdge)
 		{
 			return true;
 		}
+		else
+		{
+			return false;
+		}
 	}
 	
-	void separateParticle(Particle pToCheck, Particle startP)
+	public void restoreParticle(Particle theP, Particle newP)
 	{
-		Particle lastP = startP;
-		Particle nextP = startP;
-		ArrayList<FEMTriangle> triangles = new ArrayList<FEMTriangle>();
-		do
-		{
-			for(FEMTriangle tri : pToCheck.tris)
-			{
-				if(tri.A.equals(nextP))
-				{
-					if(tri.B.equals(pToCheck)&&!tri.C.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.C;
-						triangles.add(tri);
-						break;
-					}
-					else if(tri.C.equals(pToCheck)&&!tri.B.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.B;
-						triangles.add(tri);
-						break;
-					}
-					else
-					{
-						lastP = nextP;
-					}
-				}				
-				else if(tri.B.equals(nextP))
-				{
-					if(tri.A.equals(pToCheck)&&!tri.C.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.C;
-						triangles.add(tri);
-						break;
-					}
-					else if(tri.C.equals(pToCheck)&&!tri.A.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.A;
-						triangles.add(tri);
-						break;
-					}
-					else
-					{
-						lastP = nextP;
-					}
-				}				
-				else if(tri.C.equals(nextP))
-				{
-					if(tri.B.equals(pToCheck)&&!tri.A.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.A;
-						triangles.add(tri);
-						break;
-					}
-					else if(tri.A.equals(pToCheck)&&!tri.B.equals(lastP))
-					{
-						lastP = nextP;
-						nextP = tri.B;
-						triangles.add(tri);
-						break;
-					}
-					else
-					{
-						lastP = nextP;
-					}
-				}
-				else
-				{
-					System.out.println("Something is wrong");
-				}
-			}
-		}while(lastP!=nextP);
-		Particle newP = new Particle(pToCheck);
-		for(FEMTriangle tri : triangles)
-		{
-			if(tri.A.equals(pToCheck))
+		//has hinge joint, remove the added one
+        for(FEMTriangle tri : newP.tris)
+        {
+			if(tri.A.equals(newP))
     		{
-    			tri.A = newP;
-    			tri.Ai = newP.addTriangle(tri);
-    			pToCheck.tris.remove(tri);
+    			tri.A = theP;
+    			tri.Ai = theP.addTriangle(tri);
     		}
-    		else if(tri.B.equals(pToCheck))
+    		else if(tri.B.equals(newP))
     		{
-    			tri.B = newP;
-    			tri.Bi = newP.addTriangle(tri);
-    			pToCheck.tris.remove(tri);
+    			tri.B = theP;
+    			tri.Bi = theP.addTriangle(tri);
     		}
-    		else if(tri.C.equals(pToCheck))
+    		else if(tri.C.equals(newP))
     		{
-    			tri.C = newP;
-    			tri.Ci = newP.addTriangle(tri);
-    			pToCheck.tris.remove(tri);
+    			tri.C = theP;
+    			tri.Ci = theP.addTriangle(tri);
     		}
     		else
     		{
     			System.out.println("Something is wrong, one of the particle in triangle must be equal");
     		}
-		}
+			particles.remove(newP);
+        }
 	}
 
     
@@ -371,103 +333,122 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
         }
         
         double t = toughness.getValue();
-        Particle theP = null;
-        Vector2d theV = new Vector2d();
-        for(Particle p : particles )
+        ArrayList<Particle> pThatConsidered = new ArrayList<Particle>();
+        boolean notYetFinish = true;
+        while(notYetFinish)
         {
-        	if(!p.pinned)
-        	{
-        		double bigev = Math.max(p.separationTensor.ev1, p.separationTensor.ev2);
-        		Vector2d bigv = p.separationTensor.ev1>p.separationTensor.ev2?
-        				p.separationTensor.v1:p.separationTensor.v2;
-        		if(bigev>t)
-        		{
-        			t = bigev;
-        			theP = p;
-        			theV = bigv;
-        		}
-        	}
-        }
-
-        if(theP!=null)
-        {
-        	Particle newP = new Particle(theP);
-            newP.index = particles.size();
-            particles.add(newP);
-            ArrayList<FEMTriangle> trisToRemove = new ArrayList<FEMTriangle>();
-            for(FEMTriangle tri : theP.tris)
+            Particle theP = null;
+            Vector2d theV = new Vector2d();
+        	for(Particle p : particles )
             {
-            	Point2d a= tri.getCentroid();
-            	Vector2d n = theV; 
-            	Point2d p = theP.p;
-            	Vector2d aminusp = new Vector2d(a.x-p.x, a.y-p.y);
-            	double result = n.dot(aminusp);
-            	if(result>0)
+            	if(!p.pinned)
             	{
-            		//do nothing keep triangle connect to it
-            	}
-            	else
-            	{
-            		if(tri.A.equals(theP))
+            		double bigev = Math.max(p.separationTensor.ev1, p.separationTensor.ev2);
+            		Vector2d bigv = p.separationTensor.ev1>p.separationTensor.ev2?
+            				p.separationTensor.v1:p.separationTensor.v2;
+            		if(bigev>t)
             		{
-            			tri.A = newP;
-            			tri.Ai = newP.addTriangle(tri);
+            			t = bigev;
+            			if(!pThatConsidered.contains(p))
+            			{
+            				theP = p;
+                			theV = bigv;
+            			}        			
             		}
-            		else if(tri.B.equals(theP))
-            		{
-            			tri.B = newP;
-            			tri.Bi = newP.addTriangle(tri);
-            		}
-            		else if(tri.C.equals(theP))
-            		{
-            			tri.C = newP;
-            			tri.Ci = newP.addTriangle(tri);
-            		}
-            		else
-            		{
-            			System.out.println("Something is wrong, one of the particle in triangle must be equal");
-            		}
-            		
-
-            		trisToRemove.add(tri);
             	}
             }
-            for(FEMTriangle triToRemove : trisToRemove)
+
+            if(theP!=null)
             {
-            	theP.tris.remove(triToRemove);
-            }              
-    		for(FEMTriangle theTri : newP.tris)
-    		{
-    			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
-    			{
-    				//has hinge joint, remove the added one
-    	            for(FEMTriangle tri : theP.tris)
-    	            {
-	    				if(tri.A.equals(newP))
-	            		{
-	            			tri.A = theP;
-	            			tri.Ai = theP.addTriangle(tri);
-	            		}
-	            		else if(tri.B.equals(newP))
-	            		{
-	            			tri.B = theP;
-	            			tri.Bi = theP.addTriangle(tri);
-	            		}
-	            		else if(tri.C.equals(newP))
-	            		{
-	            			tri.C = theP;
-	            			tri.Ci = theP.addTriangle(tri);
-	            		}
-	            		else
-	            		{
-	            			System.out.println("Something is wrong, one of the particle in triangle must be equal");
-	            		}
-	    				particles.remove(newP);
-    	            }         		
-    			}
+            	notYetFinish = false;
+            	Particle newP = new Particle(theP);
+                newP.index = particles.size();
+                particles.add(newP);
+                ArrayList<FEMTriangle> trisToRemove = new ArrayList<FEMTriangle>();
+                for(FEMTriangle tri : theP.tris)
+                {
+                	Point2d a= tri.getCentroid();
+                	Vector2d n = theV; 
+                	Point2d p = theP.p;
+                	Vector2d aminusp = new Vector2d(a.x-p.x, a.y-p.y);
+                	double result = n.dot(aminusp);
+                	if(result>0)
+                	{
+                		//do nothing keep triangle connect to it
+                	}
+                	else
+                	{
+                		if(tri.A.equals(theP))
+                		{
+                			tri.A = newP;
+                			tri.Ai = newP.addTriangle(tri);
+                		}
+                		else if(tri.B.equals(theP))
+                		{
+                			tri.B = newP;
+                			tri.Bi = newP.addTriangle(tri);
+                		}
+                		else if(tri.C.equals(theP))
+                		{
+                			tri.C = newP;
+                			tri.Ci = newP.addTriangle(tri);
+                		}
+                		else
+                		{
+                			System.out.println("Something is wrong, one of the particle in triangle must be equal");
+                		}
+                		trisToRemove.add(tri);
+                	}
+                }
+                for(FEMTriangle triToRemove : trisToRemove)
+                {
+                	theP.tris.remove(triToRemove);
+                }
+                if(newP.tris.isEmpty())
+                {
+                	particles.remove(newP);
+                }
+                
+                if(theP.tris.isEmpty())
+                {
+                	particles.remove(theP);
+                }
                 identifyBoundaries();
-    		}
+                boolean particleRestored = false;
+        		for(FEMTriangle theTri : newP.tris)
+        		{
+        			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
+        			{
+        				notYetFinish = true;
+        				restoreParticle(theP, newP);
+        				particleRestored = true;
+        				pThatConsidered.add(theP);
+        	            break;
+        			}
+        		}
+        		
+        		if(!particleRestored)
+        		{
+        			for(FEMTriangle theTri : theP.tris)
+            		{
+            			if(isHingeJoint(theTri.A)||isHingeJoint(theTri.B)|| isHingeJoint(theTri.C))
+            			{
+            				notYetFinish = true;
+            				restoreParticle(theP, newP);
+            				particleRestored = true;
+            				pThatConsidered.add(theP);
+            	            break;
+            			}
+            		}
+        		}
+        		identifyBoundaries();
+            }
+            else
+            {
+            	notYetFinish = false;
+            }
         }
+        
               
         // TODO: Objective 4: process fracture
         // Note that you can use identifyBoundaries() as a slow way to update the border edges

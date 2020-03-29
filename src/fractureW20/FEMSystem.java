@@ -418,6 +418,14 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
 	        {
 	        	particles.remove(pInMiddle);
 	        }
+	        for(FEMTriangle tri: pInMiddle.tris)
+            {
+            	tri.applyForce();
+            }
+            for(FEMTriangle tri : newP.tris)
+            {
+            	tri.applyForce();
+            }
 		}
 		
 	}
@@ -507,6 +515,14 @@ public class FEMSystem implements SceneGraphNode, Filter, MatrixMult {
             if(theP.tris.isEmpty())
             {
             	particles.remove(theP);
+            }
+            for(FEMTriangle tri: theP.tris)
+            {
+            	tri.applyForce();
+            }
+            for(FEMTriangle tri : newP.tris)
+            {
+            	tri.applyForce();
             }
             identifyBoundaries();
             boolean particleRestored = false;
